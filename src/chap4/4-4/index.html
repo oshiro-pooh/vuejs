@@ -23,15 +23,29 @@
                     {{ error }}
                 </div>
                 <!-- usersがロードされたら各ユーザの名前を表示する -->
-                <div v-for="user in users" :key="user.Id">
+                <div v-for="user in users" :key="user.id">
+                    <h2>
+                        <router-link :to="{name:'users',params:{userId: user.id}}">{{ user.name }}</router-link>
+                    </h2>
+                </div>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="user-detail">
+            <div>
+                <div class="loading" v-if="loading">読み込み中...</div>
+                <div class="error" v-if="error">
+                    {{ error }}
+                </div>
+                <div v-if="user">
                     <h2>{{ user.name }}</h2>
+                    <h2>{{ user.deccription }}</h2>
                 </div>
             </div>
         </script>
         
         <!-- ルーター & Vueインスタンス-->
         <script>
-            // 擬似API
             var getUsers = function (callback) {
                 setTimeout(function () {
                     callback(null,[
@@ -44,6 +58,29 @@
                             name: 'Yohei Noda'
                         }
                     ])
+                },1000)
+            }
+
+            var userData = [
+                {
+                    id: 1,
+                    name: 'Takuya Tejima',
+                    description: '東南アジアで働くエンジニアです。'
+                },
+                {
+                    id: 2,
+                    name: 'Yohei Noda',
+                    description: 'アウトドア・フットサルが趣味のエンジニアです。'
+                }
+            ]
+
+            // 擬似API
+            var getUser = function (userId, callback) {
+                setTimeout(function () {
+                    var filterdUsers = userData.filter(function (user) {
+                        return user.id === parseInt(userId, 10)
+                    })
+                    callback(null, filterdUsers && filterdUsers[0])
                 },1000)
             }
 
@@ -83,6 +120,39 @@
                 }
             }
 
+            var UserDetail = {
+                template: 'user-detail',
+                data: function () {
+                    return {
+                        loading: false,
+                        user: null,
+                        error: null
+                    }
+                },
+
+                created: function() {
+                    this.fetchData()
+                },
+
+                watch: {
+                    '$route': 'fetchData()' 
+                },
+
+                methods: {
+                    fetchData: function () {
+                        this.loading = true
+                        getUser(this.$route.params.userId, (function (err, user) {
+                            this.loading = false
+                            if (err) {
+                                this.error = err.toString()
+                            } else {
+                                this.user = user
+                            }
+                        }).bind(this))
+                    } 
+                }
+            }
+
             var router = new VueRouter({
                 routes: [
                     {
@@ -94,6 +164,11 @@
                     {
                         path: '/users',
                         component: UserList
+                    },
+                    {
+                        path: '/users/:userId',
+                        name: 'users',
+                        component: UserDetail
                     }
                 ]
             })
