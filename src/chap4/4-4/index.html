@@ -15,18 +15,46 @@
         <script src="https://unpkg.com/vue@2.5.17"></script>
         <script src="https://unpkg.com/vue-router@3.0.1"></script>
         
-        <!-- コンポーネント定義 -->
+        <!-- テンプレート定義 -->
         <script type="text/x-template" id="user-list">
             <div>
                 <div class="loading" v-if="loading">読み込み中...</div>
                 <div class="error" v-if="error">
                     {{ error }}
                 </div>
+                <h3 v-if="!loading">
+                    <router-link :to="{name:'new'}">【新規ユーザー登録】</router-link>
+                </h3>
                 <!-- usersがロードされたら各ユーザの名前を表示する -->
                 <div v-for="user in users" :key="user.id">
                     <h2>
                         <router-link :to="{name:'users',params:{userId: user.id}}">{{ user.name }}</router-link>
                     </h2>
+                </div>
+            </div>
+        </script>
+
+        <script type="text/x-template" id="user-create">
+            <div>
+                <div>
+                    <div class="sending" v-if="sending">Sending...</div>
+                </div>
+                <div>
+                    <h2>新規ユーザー登録</h2>
+                    <div>
+                        <label>名前　：</label>
+                        <input type="text" v-model="user.name">
+                    </div>
+                    <div>
+                        <label>説明文：</label>
+                        <textarea v-model="user.description"></textarea>
+                    </div>
+                    <div v-if="error" class="error">
+                        {{ error }}
+                    </div>
+                </div>
+                <div>
+                    <input type="button" @click="createUser" value="送信">
                 </div>
             </div>
         </script>
@@ -44,20 +72,11 @@
             </div>
         </script>
         
-        <!-- ルーター & Vueインスタンス-->
+        <!-- ルーター & コンポーネント & Vueインスタンス-->
         <script>
             var getUsers = function (callback) {
                 setTimeout(function () {
-                    callback(null,[
-                        {
-                            id:1,
-                            name: 'Takuya Tejima'
-                        },
-                        {
-                            id:2,
-                            name: 'Yohei Noda'
-                        }
-                    ])
+                    callback(null, userData)
                 },1000)
             }
 
@@ -82,6 +101,15 @@
                     })
                     callback(null, filterdUsers && filterdUsers[0])
                 },1000)
+            }
+
+            var postUser = function (params, callback) {
+                setTimeout(function() {
+                    params.id = userData.length + 1
+                    alert(JSON.stringify(params))
+                    userData.push(params)
+                    callback(null, params)
+                }, 1000)
             }
 
             var UserList = {
@@ -114,6 +142,55 @@
                                 this.error = err.toString()
                             } else {
                                 this.users = users
+                            }
+                        }).bind(this))
+                    }
+                }
+            }
+
+            var UserCreate = {
+                template: '#user-create',
+                data: function () {
+                    return {
+                        sending: false,
+                        user: this.defaultUser(),
+                        error: null
+                    }
+                },
+
+                created: function () {
+                },
+
+                methods: {
+                    defaultUser: function (){
+                        return {
+                            id: '',
+                            name: '',
+                            description: ''
+                        }
+                    },
+
+                    createUser: function() {
+                        //  バリデーション
+                        if (this.user.name.trim() === '') {
+                            this.error = 'Nameは必須です'
+                            return
+                        }
+                        if (this.user.description.trim() === '') {
+                            this.error = 'Descriptionは必須です'
+                            return
+                        } 
+
+                        postUser(this.user, (function(err, user){
+                            this.sending = false
+                            if (err) {
+                                this.error = err.toString()
+                            } else {
+                                this.error = null
+                                this.user = this.defaultUser()
+                                alert('新規ユーザーが登録されました')
+                                // ユーザー一覧ページに戻る
+                                this.$router.push('/users')
                             }
                         }).bind(this))
                     }
@@ -164,6 +241,11 @@
                     {
                         path: '/users',
                         component: UserList
+                    },
+                    {
+                        path: '/users/new',
+                        name: 'new',
+                        component: UserCreate
                     },
                     {
                         path: '/users/:userId',
