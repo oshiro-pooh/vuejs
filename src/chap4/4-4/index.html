@@ -9,8 +9,8 @@
             <router-link to="/top">トップページ</router-link>
             <router-link to="/users">ユーザー一覧ページ</router-link>
             <router-link to="/users/new?redirect=true">新規ユーザー登録</router-link>
-            <router-link to="/login" >ログイン</router-link>
-            <router-link to="/logout" >ログアウト</router-link>
+            <router-link to="/login" v-show="Auth.loggedIn()">ログイン</router-link>
+            <router-link to="/logout" v-show="Auth.loggedIn()">ログアウト</router-link>
             <router-view></router-view>
         </div>
 
@@ -313,7 +313,7 @@
                         component: UserCreate,
                         beforeEnter: function (to, from, next) {
                             // 認証処理
-                            if (!Auth.loggedIn()) {
+                            if (!Auth.loggedIn()) { 
                                 next({
                                     path: '/login',
                                     query: { redirect: to.fullPath }
