@@ -8,6 +8,9 @@
         <div id="app">
             <router-link to="/top">トップページ</router-link>
             <router-link to="/users">ユーザー一覧ページ</router-link>
+            <router-link to="/users/new?redirect=true">新規ユーザー登録</router-link>
+            <router-link to="/login" >ログイン</router-link>
+            <router-link to="/logout" >ログアウト</router-link>
             <router-view></router-view>
         </div>
 
@@ -71,6 +74,22 @@
                 </div>
             </div>
         </script>
+
+        <script type="text/x-template" id="login">
+            <div>
+                <h2>Login</h2>
+                <p >
+                    ログインしてください
+                </p>
+                <form @submit.prevent="login">
+                    <label><input v-model="email" placeholder="email"></label>
+                    <label><input v-model="pass" placeholder="password" type="password"></label>
+                    <br>
+                    <button type="submit">ログイン</button>
+                    <p v-if="error" class="error">ログインに失敗しました</p>
+                </form>
+            </div>
+        </script>
         
         <!-- ルーター & コンポーネント & Vueインスタンス-->
         <script>
@@ -101,6 +120,28 @@
                     })
                     callback(null, filterdUsers && filterdUsers[0])
                 },1000)
+            }
+
+            var Auth = {
+                login: function (email, pass, cb) {
+                    setTimeout(function () {
+                        if (email === 'vue@example.com' && pass === 'vue') {
+                            // ログイン成功時はローカルストレージにtokenを保存
+                            localStorage.token = Math.random().toString(36).substring(7)
+                            if (cb) { cb(true) }
+                        } else {
+                            if (cb) { cb(false) }
+                        }
+                    }, 0)
+                },
+
+                logout: function () {
+                    delete localStorage.token
+                },
+
+                loggedIn: function() {
+                    return !!localStorage.token
+                }
             }
 
             var postUser = function (params, callback) {
@@ -218,7 +259,7 @@
                 methods: {
                     fetchData: function () {
                         this.loading = true
-                        getUser(this.$route.params.userId, (function (err, user) {
+                        getUser(this.$router.params.userId, (function (err, user) {
                             this.loading = false
                             if (err) {
                                 this.error = err.toString()
@@ -227,6 +268,30 @@
                             }
                         }).bind(this))
                     } 
+                }
+            }
+
+            var Login = {
+                template: '#login',
+                data :function () {
+                    return {
+                        email: 'vue@example.com',
+                        pass: '',
+                        error: false
+                    }
+                },
+
+                methods: {
+                    login: function () {
+                        Auth.login(this.email, this.pass, (function (loggedIn) {
+                            if (!loggedIn) {
+                                this.error = true
+                            } else {
+                                // redirectパラメータがついてる場合はそのパスへ遷移
+                                this.$router.replace(this.$route.query.redirect || '/')
+                            }
+                        }).bind(this))
+                    }
                 }
             }
 
@@ -245,12 +310,37 @@
                     {
                         path: '/users/new',
                         name: 'new',
-                        component: UserCreate
+                        component: UserCreate,
+                        beforeEnter: function (to, from, next) {
+                            // 認証処理
+                            if (!Auth.loggedIn()) {
+                                next({
+                                    path: '/login',
+                                    query: { redirect: to.fullPath }
+                                })
+                                alert('ログイン')
+                            } else {
+                                // 認証済みであればそのままGO
+                                next()
+                            }
+                        }
                     },
                     {
                         path: '/users/:userId',
                         name: 'users',
                         component: UserDetail
+                    },
+                    {
+                        path: '/login',
+                        component: Login
+                    },
+                    {
+                        path: '/logout',
+                        beforeEnter: function (to, from, next) {
+                            Auth.logout()
+                            next('/')
+                            alert('ログアウト')
+                        }
                     }
                 ]
             })
