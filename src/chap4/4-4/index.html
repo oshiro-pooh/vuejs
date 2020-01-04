@@ -9,7 +9,7 @@
             <router-link to="/top">トップページ</router-link>
             <router-link to="/users">ユーザー一覧ページ</router-link>
             <router-link to="/users/new?redirect=true">新規ユーザー登録</router-link>
-            <router-link to="/login" v-show="Auth.loggedIn()">ログイン</router-link>
+            <router-link to="/login" v-show="!Auth.loggedIn()">ログイン</router-link>
             <router-link to="/logout" v-show="Auth.loggedIn()">ログアウト</router-link>
             <router-view></router-view>
         </div>
@@ -277,7 +277,7 @@
                     return {
                         email: 'vue@example.com',
                         pass: '',
-                        error: false
+                        error: false,
                     }
                 },
 
@@ -289,6 +289,7 @@
                             } else {
                                 // redirectパラメータがついてる場合はそのパスへ遷移
                                 this.$router.replace(this.$route.query.redirect || '/')
+                                alert('ログインしました')
                             }
                         }).bind(this))
                     }
@@ -318,7 +319,6 @@
                                     path: '/login',
                                     query: { redirect: to.fullPath }
                                 })
-                                alert('ログイン')
                             } else {
                                 // 認証済みであればそのままGO
                                 next()
@@ -339,7 +339,7 @@
                         beforeEnter: function (to, from, next) {
                             Auth.logout()
                             next('/')
-                            alert('ログアウト')
+                            alert('ログアウトしました')
                         }
                     }
                 ]
@@ -347,7 +347,10 @@
 
             var app = new Vue({
                 el:"#app",
-                router: router
+                router: router,
+                data: {
+                    Auth: Auth
+                }
             })
         </script>
     </body>
